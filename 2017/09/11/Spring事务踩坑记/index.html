@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="spring," />
 
 
 
@@ -93,12 +93,20 @@
 
 
 
-<meta property="og:type" content="website">
-<meta property="og:title" content="andy.xu">
-<meta property="og:url" content="http://yoursite.com/index.html">
+<meta name="description" content="使用spring 事务踩到的坑这段期间使用使用 spring 事务遇到几个深坑，遂记录下来。">
+<meta name="keywords" content="spring">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring事务踩坑记">
+<meta property="og:url" content="http://yoursite.com/2017/09/11/Spring事务踩坑记/index.html">
 <meta property="og:site_name" content="andy.xu">
+<meta property="og:description" content="使用spring 事务踩到的坑这段期间使用使用 spring 事务遇到几个深坑，遂记录下来。">
+<meta property="og:image" content="https://dn-mhc.qbox.me/idea.png">
+<meta property="og:image" content="https://docs.spring.io/spring/docs/current/spring-framework-reference/htmlsingle/images/tx.png">
+<meta property="og:updated_time" content="2017-09-11T14:57:43.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="andy.xu">
+<meta name="twitter:title" content="Spring事务踩坑记">
+<meta name="twitter:description" content="使用spring 事务踩到的坑这段期间使用使用 spring 事务遇到几个深坑，遂记录下来。">
+<meta name="twitter:image" content="https://dn-mhc.qbox.me/idea.png">
 
 
 
@@ -126,13 +134,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/"/>
+  <link rel="canonical" href="http://yoursite.com/2017/09/11/Spring事务踩坑记/"/>
 
 
 
 
 
-  <title>andy.xu</title>
+  <title>Spring事务踩坑记 | andy.xu</title>
   
 
 
@@ -166,9 +174,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-   page-home 
- ">
+  <div class="container sidebar-position-left page-post-detail ">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -261,9 +267,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -289,9 +295,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/09/11/Spring事务踩坑记/" itemprop="url">Spring事务踩坑记</a></h1>
+          <h1 class="post-title" itemprop="name headline">Spring事务踩坑记</h1>
         
 
         <div class="post-meta">
@@ -338,278 +342,92 @@
       
 
       
+        <h1 id="使用spring-事务踩到的坑"><a href="#使用spring-事务踩到的坑" class="headerlink" title="使用spring 事务踩到的坑"></a>使用spring 事务踩到的坑</h1><p>这段期间使用使用 spring 事务遇到几个深坑，遂记录下来。<br><a id="more"></a></p>
+<h2 id="坑1-Transactional-作用非-public-方法"><a href="#坑1-Transactional-作用非-public-方法" class="headerlink" title="坑1:@Transactional 作用非 public 方法"></a>坑1:@Transactional 作用非 public 方法</h2><p>这个问题使用 spring 的过程中中一直没发现，直到有一天升级 idea 以后发现 idea 给我如下错误：<br><img src="https://dn-mhc.qbox.me/idea.png" alt="idea error"><br>于是按照 idea 的提示修改，将方法设置为 public。没有深究其中的原因，本以为这样修改以后就不会有其他问题。于是，踩到第二个坑。</p>
+<h2 id="坑2：类内部调用-Transactional-方法"><a href="#坑2：类内部调用-Transactional-方法" class="headerlink" title="坑2：类内部调用 @Transactional 方法"></a>坑2：类内部调用 @Transactional 方法</h2><p>一次项目中，一个类内部调用带有 @Transactional 的方法，目的是为了方法内部发生异常时，回滚数据。项目上线后，方法内部果然发生异常，日志也显示了方法抛出的异常，但是数据的状态却未回滚。</p>
+<p>碰到这两个问题，我才意识到原来对 spring 还是这么不熟悉。于是查看 spring 事务方面的文档，带着疑问，阅读 spring 的文档。</p>
+<h2 id="spring-的事务调用过程"><a href="#spring-的事务调用过程" class="headerlink" title="spring 的事务调用过程"></a>spring 的事务调用过程</h2><p>文档用一张图片介绍事务方法调用过程。<br><img src="https://docs.spring.io/spring/docs/current/spring-framework-reference/htmlsingle/images/tx.png" alt="调用方法的过程"><br>从图中可以看到，调用者调用的是 AOP 的代理对象，事务通知在最外层，其他通知被包围。</p>
+<h3 id="Transactional-只能作用有-public-方法"><a href="#Transactional-只能作用有-public-方法" class="headerlink" title="@Transactional 只能作用有 public 方法"></a>@Transactional 只能作用有 public 方法</h3><blockquote>
+<p>Method visibility and @Transactional</p>
+<p>When using proxies, you should apply the @Transactional annotation only to methods with public visibility. If you do annotate protected, private or package-visible methods with the @Transactional annotation, no error is raised, but the annotated method does not exhibit the configured transactional settings. Consider the use of AspectJ (see below) if you need to annotate non-public methods</p>
+</blockquote>
+<p>当使用代理，你只能将 @Transactional 作用于 public 方法上。如果作用于其他，事务将不起到作用。</p>
+<h3 id="外部方法调用-Transactional-才有效"><a href="#外部方法调用-Transactional-才有效" class="headerlink" title="外部方法调用 @Transactional 才有效"></a>外部方法调用 @Transactional 才有效</h3><blockquote>
+<p>In proxy mode (which is the default), only external method calls coming in through the proxy are intercepted. This means that self-invocation, in effect, a method within the target object calling another method of the target object, will not lead to an actual transaction at runtime even if the invoked method is marked with @Transactional. Also, the proxy must be fully initialized to provide the expected behaviour so you should not rely on this feature in your initialization code, i.e. @PostConstruct</p>
+</blockquote>
+<p>默认的代理模式，外部方法调用才会有效。</p>
+<p>看过以上文档，可以知道使用 spring 的事务，要避免以上的情况。那么为什么上述情况不能事务不起作用那。我们可以看到，会看上面 spring 事务发生的过程，其里面本质使用了 AOP 。而 spring 的 AOP构建与动态代理的基础上，因此 Spring 对AOP 的支持局限于方法拦截。</p>
+<blockquote>
+<p>Spring AOP currently supports only method execution join points (advising the execution of methods on Spring beans). Field interception is not implemented, although support for field interception could be added without breaking the core Spring AOP APIs. If you need to advise field access and update join points, consider a language such as AspectJ.</p>
+</blockquote>
+<p>#参考<br>1.<a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/htmlsingle/#transaction" target="_blank" rel="external">Spring事务文档</a><br>2.<a href="https://www.ibm.com/developerworks/cn/java/j-master-spring-transactional-use/index.html" target="_blank" rel="external">理解 Spring 事务</a><br>3.<a href="http://jinnianshilongnian.iteye.com/blog/1857189" target="_blank" rel="external">Spring AOP 拦截问题</a></p>
+
+      
+    </div>
+
+    <div>
+      
         
-          <h1 id="使用spring-事务踩到的坑"><a href="#使用spring-事务踩到的坑" class="headerlink" title="使用spring 事务踩到的坑"></a>使用spring 事务踩到的坑</h1><p>这段期间使用使用 spring 事务遇到几个深坑，遂记录下来。<br>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2017/09/11/Spring事务踩坑记/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
+
+      
+    </div>
+
+    <div>
+      
         
+
       
     </div>
 
     <div>
       
-    </div>
+        
 
-    <div>
-      
-    </div>
-
-    <div>
       
     </div>
 
     <footer class="post-footer">
       
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/23/银企直联接入心得/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="andy.xu">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="https://dn-mhc.qbox.me/a2ec3301213fb80e85b0862a34d12f2eb83894f4.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="andy.xu">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/07/23/银企直联接入心得/" itemprop="url">银企直联接入心得</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-07-23T15:29:44+08:00">
-                2017-07-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
+        <div class="post-tags">
           
-
+            <a href="/tags/spring/" rel="tag"># spring</a>
           
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
         </div>
-      </header>
-    
+      
 
-    <div class="post-body" itemprop="articleBody">
-
+      
       
       
 
       
-        
-          <h1 id="银企直联"><a href="#银企直联" class="headerlink" title="银企直联"></a>银企直联</h1><p>本人在最近半年接手开发一个汇金项目，其主要作用与财务打款。开发过程中陆陆续续接手几家银行银企服务，现总结一下银企接入的心得。
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2017/07/23/银企直联接入心得/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/07/23/银企直联接入心得/" rel="next" title="银企直联接入心得">
+                <i class="fa fa-chevron-left"></i> 银企直联接入心得
+              </a>
+            
           </div>
-          <!--/noindex-->
-        
-      
-    </div>
 
-    <div>
-      
-    </div>
+          <span class="post-nav-divider"></span>
 
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/16/hello-world/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="andy.xu">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="https://dn-mhc.qbox.me/a2ec3301213fb80e85b0862a34d12f2eb83894f4.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="andy.xu">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/07/16/hello-world/" itemprop="url">hello-world</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
+          <div class="post-nav-prev post-nav-item">
             
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-07-16T18:11:44+08:00">
-                2017-07-16
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          
-            <h1 id="hello-world"><a href="#hello-world" class="headerlink" title="hello  world"></a>hello  world</h1><p>大三那个午后,敲下第一行代码<code>hello world</code>开始,从此走上搬砖之路.<br>Hello-world!!!!,我的博客网站总算诞生!!! 😄😄😄</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </article>
 
 
-    
-  </section>
 
-  
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -617,6 +435,10 @@
 
 
           
+  <div class="comments" id="comments">
+    
+  </div>
+
 
         </div>
         
@@ -636,8 +458,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview sidebar-panel sidebar-panel-active">
+      <section class="site-overview sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="https://dn-mhc.qbox.me/a2ec3301213fb80e85b0862a34d12f2eb83894f4.jpg"
@@ -701,6 +532,22 @@
 
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#使用spring-事务踩到的坑"><span class="nav-number">1.</span> <span class="nav-text">使用spring 事务踩到的坑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#坑1-Transactional-作用非-public-方法"><span class="nav-number">1.1.</span> <span class="nav-text">坑1:@Transactional 作用非 public 方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#坑2：类内部调用-Transactional-方法"><span class="nav-number">1.2.</span> <span class="nav-text">坑2：类内部调用 @Transactional 方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spring-的事务调用过程"><span class="nav-number">1.3.</span> <span class="nav-text">spring 的事务调用过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Transactional-只能作用有-public-方法"><span class="nav-number">1.3.1.</span> <span class="nav-text">@Transactional 只能作用有 public 方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#外部方法调用-Transactional-才有效"><span class="nav-number">1.3.2.</span> <span class="nav-text">外部方法调用 @Transactional 才有效</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -814,10 +661,10 @@
   
 
   
-    <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
 <script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
 
-  
+
 
   
 
